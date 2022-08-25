@@ -1,15 +1,16 @@
 from random import choice, randint
 from chemlib import *
-
+import math
 
 class Question:
     def __init__(self, question, answer):
         self.question = question
         self.answer = answer
-    def check(self, response):
+    def check(self):
+        response = input(self.question)
         if response == str(self.answer):
-            return "Correct"
-        return "You're Dumb"
+            return True
+        return False
     def create(self):
         pass
 
@@ -44,25 +45,23 @@ class LimitingReagent(Question):
 
     def create(self):
         n = choice(self.reactions)
-        print(n)
         r = Reaction.by_formula(n)
-        print(r)
         r.balance()
         first = r.reactant_formulas[0]
         second = r.reactant_formulas[-1]
-        print(r.reactant_formulas)
         n1 = randint(1,100)
         n2 = randint(1,100)
         limiting = r.limiting_reagent(n1, n2)
-        self.question = f"What is the limiting reagent in the reaction: {r.formula} \n Given I have {n1} grams of {first} and {n2} grams of {second}?"
-        self.answer = limiting.formula
+        self.question = f"What is the limiting reagent in the reaction: {r.formula} \n Given I have {n1} grams of {first} and {n2} grams of {second}? \n"
+        self.question += f"(1) {first} \n"
+        self.question += f"(2) {second} \n"
+        if limiting.formula == first:
+            self.answer = str(1)
+        if limiting.formula == second:
+            self.answer = str(2)
         self.reactions.remove(n)
 
 class Flowchart(Question):
-    #HCl = {"Descriptor": "Ppt", "Pb2+": "White ppt", "Ag+": "White ppt"}
-    #Excess_NH3 = {"Ag+": "Ppt dissolves", "Pb2+": "Ppt doesnt dissolve"}
-    #H2SO4 = {"Descriptor": "Ppt", "Ba2+": "White ppt", "Ca2+": "White ppt"}
-    #NaOH = {"None": "No Ppt", "Mg2+": "White ppt", "Cu2+": "Blue ppt", "Fe2+": "Green Ppt", "Fe3+":"Brown ppt"}
     Tests = ["HCl" , "Excess_NH3","H2SO4","NaOH", "Flame"]
     Cations = ['Pb2+', 'Ag+', 'Ca2+', 'Ba2+', 'Mg2+', 'Fe2+', 'Fe3+', 'Cu2+']
     Pb2 = {'Identity': 'Pb2+','HCl' : True , 'H2SO4' : True, 'NaOH':True, 'Excess_NH3': True,"Flame":"N/A"}
@@ -84,7 +83,6 @@ class Flowchart(Question):
         for i in range(len(self.Tests)):
            self.question += f"({i+1}) {self.Tests[i]}\n"
         self.answer = self.cation['Identity']
-        print(self.answer)
         self.Properties.remove(self.cation)
     def check(self):
         limit = 4
@@ -100,10 +98,11 @@ class Flowchart(Question):
                 else:
                     print(self.cation[answer])
             elif response == self.answer:
-                print("Correct")
+                return True
                 break
             else:
                 print("Invalid test and/or incorrect answer")
+                return False
 
         #while response in self.cation:
             #print (self.cation[response])
@@ -113,7 +112,37 @@ class Flowchart(Question):
             #else:
                 #print("Invalid test and/or incorrect answer")
 
-q = Flowchart("Question","Answer")
-q.create()
-q.check()
-#while q.check(input(q.question)) != "Correct":
+class Acid(Question):
+    data = {"HCO2H":3.75, "CCl3CO2H": 0.77,"CH3CO2H":4.75,"HC7H5O2":4.2, "HF":3.2}
+    Acids = ["HCO2H","CCl3CO2H","CH3CO2H","HC7H5O2","HF"]
+    def __init__(self,question,answer):
+        super().__init__(question, answer)
+    def create(self):
+        n = choice(self.Acids)
+        pka = self.data[n]
+        M = randint(0,10)
+        self.question = f"What is the pH of a {M}M solution of {n} which has a pKa of {pka}. \n Give your answer to four decimal places."
+        H = (10**(-pka)*M)**0.5
+        pH = math.log(H,10)
+        print(H)
+        self.answer = f"{pH:.4f}"
+        print(pH)
+
+
+quiz_length = 5
+quiz_questions = []
+score = 0
+for i in range(quiz_length):
+    a = LimitingReagent("Question","Answer")
+    b = Flowchart("Question","Answer")
+    c = MassPercent("Question","Answer")
+    d = Acid("Question","Answer")
+    q = choice([a,b,c,d])
+    q.create()
+    if q.check():
+        score += 1
+        print(f"Correct. \n -- Score = {score}")
+    else:
+        print(f'Wrong!\n --The Correct answer was {q.answer}')
+        print(f"Score = {score}")
+print(f"You have scored a total of {score}/{quiz_length}!")
